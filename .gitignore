@@ -34,3 +34,51 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+**/.env
+
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+
+# Exclude all .tfvars files, which might contain sensitive data
+*.tfvars
+
+# Ignore override files as they can contain sensitive data
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+
+.terraform.lock.hcl
+
+# Next.js
+.next/
+out/
+
+# Express.js
+node_modules/
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bin/
+
+# Environment Variables
+**/*.env
+
+# Editor and OS artifacts
+.DS_Store
+*.sublime*
+.vscode/
