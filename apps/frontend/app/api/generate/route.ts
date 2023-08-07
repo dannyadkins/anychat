@@ -27,6 +27,7 @@ export async function GET() {
     const response = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
       stream: true,
+      //   @ts-ignore
       messages: messages,
       max_tokens: 500,
       temperature: 0.7,
