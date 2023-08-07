@@ -2,7 +2,8 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "dev": "./setup_env.sh && turbo run dev",
+    "setup": "./setup_env.sh",
+    "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
@@ -13,7 +14,7 @@
     "prettier": "^2.5.1",
     "turbo": "latest"
   },
-  "name": "chatgpt-clone",
+  "name": "anychat",
   "packageManager": "npm@9.6.7",
   "workspaces": [
     "apps/*",
