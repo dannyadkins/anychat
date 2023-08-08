@@ -101,7 +101,13 @@ Pros:
 - Logic for streaming back is also reusable for the GET /conversations/[conversationId]/current
 - Also allows us to easily stop the user from sending multiple messages in a row (if there are tokens in Redis, return an error)
 
-I settled on `Approach #4`. The user sends a request, the API sends a POST to the model, the model saves tokens directly to Redis. The API then reads from Redis and streams back tokens until they are done (either an interval, or a stop token). Once they are done, it saves to database.
+---
+
+I settled on `Approach #4`.
+
+The user sends a request, the API sends a POST to the model, the model saves tokens directly to Redis. The API then reads from Redis and streams back tokens until they are done (either an interval, or a stop token). Once they are done, it saves to database.
+
+I chose `Vercel KV` out of ease, but one downside is that it doesn't use Redis Streams, which would be best for this use case. This task is best suited for a more traditional message queue.
 
 ### GET /conversations/[conversationId]/history: get the history of a chat
 

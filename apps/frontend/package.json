@@ -12,13 +12,19 @@
     "@vercel/kv": "^0.2.2",
     "ai": "^2.1.32",
     "autoprefixer": "^10.4.14",
+    "classnames": "^2.3.2",
+    "database": "workspace:*",
+    "framer-motion": "^10.15.1",
     "next": "^13.4.13",
     "openai": "^3.3.0",
     "openai-edge": "^1.2.2",
+    "sass": "^1.64.2",
+    "swr": "^2.2.0",
     "tailwindcss": "^3.3.3"
   },
   "devDependencies": {
-    "@types/react": "^18.2.18",
-    "eslint": "^8.46.0"
+    "@types/node": "^20.4.8",
+    "eslint": "^8.46.0",
+    "typescript": "^5.1.6"
   }
 }

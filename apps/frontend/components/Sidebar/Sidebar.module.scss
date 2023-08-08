@@ -1,0 +1,36 @@
+.sidebar {
+  width: 260px;
+  // TODO make into variable
+  background-color: var(--dark-0);
+  height: 100vh;
+  padding: 0.5rem;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+
+    .button {
+      padding: 0.5rem;
+      border: 1px solid rgb(256, 256, 256, 0.2);
+      border-radius: 6px;
+    }
+  }
+
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .conversation {
+    padding: 0.5rem;
+    transition: all 0.1s ease-out;
+    border-radius: 0.5rem;
+
+    &:hover {
+      background-color: var(--dark-2);
+      cursor: pointer;
+    }
+  }
+}

@@ -1,0 +1,34 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Conversation {
+  id          String      @id @default(uuid())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  title       String?
+  messages   Message[]
+  userId     String
+}
+
+model Message {
+  id            String      @id @default(uuid())
+  createdAt     DateTime    @default(now())
+  content       String
+  role          String      
+  conversation  Conversation @relation(fields: [conversationId], references: [id])
+  conversationId String
+  userId        String
+  parentId      String?
+  parent        Message?    @relation("ParentMessage", fields: [parentId], references: [id])
+  children      Message[]   @relation("ParentMessage")
+  rootId       String?  // your rootId is your parent's rootId, unless you are the source of a branch, in which case its your parent 
+}
