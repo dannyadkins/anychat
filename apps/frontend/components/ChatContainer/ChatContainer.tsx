@@ -4,7 +4,7 @@ import { useChat } from "@/data/useChat";
 import { sendMessage } from "./actions";
 import styles from "./ChatContainer.module.scss";
 import classNames from "classnames";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { Dropdown } from "../Dropdown/Dropdown";
 
 interface IChatProps {
@@ -18,7 +18,11 @@ export function ChatContainer(props: IChatProps) {
     conversationId,
     initialMessages,
   });
+
+  const [messagesToDisplay, setMessagesToDisplay] = useState(messages);
   const [model, setModel] = useState("gpt-3.5-turbo");
+
+  const [branchToShow, setBranchToShow] = useState<any>({});
 
   const [input, setInput] = useState("");
 
@@ -34,12 +38,109 @@ export function ChatContainer(props: IChatProps) {
     scrollDown();
   }, [messages]);
 
+  // TODO wrap in a usecallback bc this is expensive
+  const constructTree = useCallback(
+    (messages: any[]) => {
+      if (!messages.length) {
+        return [];
+      }
+      // take a bunch of messages
+      // for each message with many children, construct "branch" objects, which represent each children and each childrens' descendants, until another branch is seen
+      // for each message with branches, have a state var that tracks which branch is chosen, default 0
+
+      // Construct id2message map
+      const id2message = messages.reduce((acc, m) => {
+        acc[m.id] = m;
+        return acc;
+      }, {});
+
+      // Construct parent2children map
+      const parent2children = messages.reduce((acc, m) => {
+        acc[m.id] = messages.filter((m2) => m2.parentId === m.id);
+        return acc;
+      }, {});
+
+      // Construct branch objects by traversing starting from the top
+      // looks like:
+      // { "root": [[m1, m2, m3...]], "m3": [[m4, m5, m6...], [m12, m13, m14]] }
+
+      const messagesToShow = [];
+      let root = messages[0];
+
+      while (true) {
+        messagesToShow.push({
+          ...root,
+          numChildren: parent2children[root.id].length,
+        });
+        const children = parent2children[root.id];
+        if (children.length > 1) {
+          root = children[branchToShow[root.id] || 0];
+        } else if (children.length === 1) {
+          root = children[0];
+        } else if (children.length === 0) {
+          break;
+        }
+
+        if (Object.keys(parent2children).length === 0) {
+          break;
+        }
+      }
+      return messagesToShow;
+
+      // return messages.map((m) => {
+      //   const children = messages.filter((m2) => m2.parentId === m.id);
+      //   return {
+      //     ...m,
+      //     numChildren: children.length,
+      //   };
+      // });
+    },
+    [messages, branchToShow]
+  );
+
+  useEffect(() => {
+    if (!messages.length) {
+      return;
+    }
+    setMessagesToDisplay(constructTree(messages));
+  }, [branchToShow, messages]);
+
   return (
     <div className="max-h-screen w-full flex flex-col items-center ">
       <div className="grow overflow-scroll w-full" ref={ref}>
         {messages.length > 0 ? (
-          messages.map((m) => (
-            <Message key={m.id} message={m} sendMessage={sendMessage} />
+          messagesToDisplay.map((m) => (
+            <Message
+              key={m.id}
+              message={m}
+              sendMessage={sendMessage}
+              incrementBranchToShow={(override?: boolean) => {
+                setBranchToShow((old: any) => {
+                  return {
+                    ...old,
+                    [m.parentId]: override
+                      ? (old[m.parentId] || 0) + 1
+                      : Math.min(
+                          (old[m.parentId] || 0) + 1,
+                          messages.filter((m2) => m2.parentId === m.parentId)
+                            .length - 1
+                        ),
+                  };
+                });
+              }}
+              decrementBranchToShow={() => {
+                setBranchToShow((old: any) => {
+                  return {
+                    ...old,
+                    [m.parentId]: Math.max((old[m.parentId] || 0) - 1, 0),
+                  };
+                });
+              }}
+              numBranches={
+                messages.filter((m2) => m2.parentId === m.parentId).length
+              }
+              branchToShow={branchToShow[m.parentId]}
+            />
           ))
         ) : (
           <ModelSelector setModel={setModel} model={model} />
@@ -51,7 +152,7 @@ export function ChatContainer(props: IChatProps) {
           onSubmit={(e) => {
             // TODO allow editing of messages
             e.preventDefault();
-            sendMessage(input, "", () => {
+            sendMessage(input, messagesToDisplay?.at(-1)?.id || "", () => {
               setInput("");
             });
           }}
@@ -90,7 +191,14 @@ const ModelSelector = ({ setModel, model }: any) => {
 };
 
 export const Message = (props: any) => {
-  const { message, sendMessage } = props;
+  const {
+    message,
+    sendMessage,
+    incrementBranchToShow,
+    decrementBranchToShow,
+    branchToShow,
+    numBranches,
+  } = props;
   const [isEditing, setIsEditing] = useState(false);
   const [newMessage, setNewMessage] = useState(message.content);
 
@@ -105,9 +213,36 @@ export const Message = (props: any) => {
       {!isEditing && (
         <span className="relative group">
           {message.content}
-          <span>ID: {message.id}</span>
-          <span>PARENT: {message.parentId}</span>
-          <span>ROOT: {message.rootId}</span>
+          <span> ID: {message.id} </span>
+          <span> Parent: {message.parentId} </span>
+          <span> Root: {message.rootId} </span>
+
+          {numBranches > 1 && (
+            <div className="absolute top-0 -left-16  text-xs">
+              <div className="flex flex-row gap-1 w-[40px] items-start h-[1.75em]">
+                <span
+                  onClick={() => {
+                    decrementBranchToShow();
+                  }}
+                  className="opacity-50 hover:opacity-100 transition-opacity duration-200 ease-in-out cursor-pointer"
+                >
+                  {"<"}
+                </span>
+                <span>
+                  {(branchToShow || 0) + 1}/{numBranches}
+                </span>
+                <span
+                  onClick={() => {
+                    incrementBranchToShow();
+                  }}
+                  className="opacity-50 hover:opacity-100 transition-opacity duration-200 ease-in-out cursor-pointer"
+                >
+                  {">"}
+                </span>
+              </div>
+            </div>
+          )}
+
           {message.role === "user" && (
             <button
               className="absolute top-0 right-0 group-hover:opacity-100 opacity-0 transition-opacity duration-200 ease-in-out"
@@ -134,6 +269,8 @@ export const Message = (props: any) => {
                 e.preventDefault();
                 sendMessage(newMessage, message.parentId, () => {
                   setIsEditing(false);
+                  incrementBranchToShow(true);
+
                   //  TODO mutate messages
                 });
               }}

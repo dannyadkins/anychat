@@ -12,7 +12,7 @@ export function ConversationList({ conversations }: { conversations: any[] }) {
   return (
     <>
       <AnimatePresence>
-        <div className={"flex flex-col gap-1"}>
+        <div className={"flex flex-col gap-1 overflow-y-scroll h-full"}>
           {/* TODO: add typing */}
           {conversations.map((conversation: any) => (
             <motion.div

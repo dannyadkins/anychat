@@ -29,7 +29,7 @@ export async function Sidebar() {
   });
 
   return (
-    <div className={styles.sidebar}>
+    <div className={classNames(styles.sidebar, "max-h-screen overflow-hidden")}>
       <div className={styles.header}>
         <Link href="/" className={classNames(styles.button, "w-full")}>
           <span>+</span> <span>New chat</span>

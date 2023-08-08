@@ -12,8 +12,10 @@ export const runtime = "edge";
 // const redis = new Redis(); // Configure according to your Redis setup
 
 export async function POST(req: NextRequest) {
-  console.log("Generating new message");
+  console.log("Generating new message: ");
   const { messages, conversationId } = await req.json();
+  console.log("Conversation ID: ", conversationId);
+  console.log("New message: ", messages[messages.length - 1]);
 
   const strippedMessages = messages.map((message: any) => {
     return { content: message.content, role: message.role };
