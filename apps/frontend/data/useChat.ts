@@ -33,6 +33,7 @@ export function useChat({
       fallbackData: initialMessages,
     }
   );
+  console.log("Initial data: ", data);
   const messages = data! || [];
 
   //   TODO: on reconnect, call a "resume" function that hits the resume endpoint, sets loading if needed, and streams back
@@ -75,9 +76,13 @@ export function useChat({
       mutateIsLoading(true);
       mutate(newMessages, false);
 
-      await getGenerationStream(newMessages, (tokens) => {
-        mutate(tokens, false);
-      });
+      await getGenerationStream(
+        `http://localhost:3000/api/conversations/${conversationId}`,
+        newMessages,
+        (tokens) => {
+          mutate(tokens, false);
+        }
+      );
     } catch (err) {
       mutate(previousMessages, false);
       setError(err as Error);
@@ -99,11 +104,12 @@ export function useChat({
 }
 
 const getGenerationStream = async (
+  apiUrl: string,
   messages: any[],
   onTokens: (tokens: any[]) => void
 ) => {
   // TODO important replace this with a proper conversation endpoint so it can save stuff
-  const res = await fetch(`http://localhost:3000/api/generate`, {
+  const res = await fetch(apiUrl, {
     method: "POST",
     body: JSON.stringify({
       messages,

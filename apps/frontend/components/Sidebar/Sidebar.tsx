@@ -6,6 +6,7 @@ import classNames from "classnames";
 
 import { AnimatePresence, motion } from "framer-motion";
 import { WrappedAnimatePresence, WrappedMotion } from "./WrappedMotion";
+import { ConversationList } from "./ConversationList";
 
 export async function Sidebar() {
   // get conversations
@@ -34,26 +35,7 @@ export async function Sidebar() {
         </Link>
         <div className={classNames(styles.button, "w-[40px]")}>/</div>
       </div>
-      <WrappedAnimatePresence>
-        <div className={"flex flex-col gap-1"}>
-          {/* TODO: add typing */}
-          {conversations.map((conversation: any) => (
-            <WrappedMotion
-              key={conversation.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <Link
-                href={`/conversation/${conversation.id}`}
-                key={conversation.id}
-              >
-                <div className={styles.conversation}>{conversation.title}</div>
-              </Link>
-            </WrappedMotion>
-          ))}
-        </div>
-      </WrappedAnimatePresence>
+      <ConversationList conversations={conversations} />
     </div>
   );
 }

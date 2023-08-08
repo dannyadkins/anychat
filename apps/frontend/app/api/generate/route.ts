@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
   });
 
   const convoId = "some-convo-id";
+  const userId = "some-user-id";
 
   //   if its already started, error
   //   if ((await redis.get(convoId + "-status")) === "started") {

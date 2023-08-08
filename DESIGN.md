@@ -138,7 +138,7 @@ I wanted to create a universal interface to work with our database, which includ
 
 I chose `Prisma` ORM to create a generic TypeScript client for our databases.
 
-The benefits include easier migrations, ability to keep the DB schema synced with the code (`prisma db push` works kind of like `terraform apply`), and most importantly, we can abstract sharding and any other shared logic (e.g. special queries) to be only written in one place.
+The benefits include easier migrations, ability to keep the DB schema synced with the code (`prisma db push` works kind of like `terraform apply`), and most importantly, we can abstract sharding and any other shared logic (e.g. special queries) to be only written in one place. Major downside is that it currently doesn't work in the edge runtime, and also need a different ORM alongside it if we end up having pieces of backend in Python (but we can programatically synchronize them).
 
 ### Sharding
 
@@ -201,3 +201,9 @@ For fetching chat history, I chose `SWR`. This allows the user to jump between c
 ### Pages
 
 ### Components
+
+# Learnings after implementing
+
+I would have offloaded much more of the conversation management logic to the server.
+For example, we pass in the history of messages from the frontend to the API.
+The alternative would be to load the history of messages in the API itself. This would be slightly slower, but it would enable far more flexibility to do things like "find the 10 messages with the highest cosine similarity" that can't be done readily on the client, as well as less complexity over time.

@@ -6,14 +6,15 @@ import styles from "./ChatContainer.module.scss";
 import classNames from "classnames";
 
 interface IChatProps {
-  history?: any[];
+  initialMessages?: any[];
   conversationId: string;
 }
 
 export function ChatContainer(props: IChatProps) {
-  const { history, conversationId } = props;
+  const { initialMessages, conversationId } = props;
   const { messages, input, setInput, sendMessage } = useChat({
     conversationId,
+    initialMessages,
   });
   console.log("messages: ", messages);
 
