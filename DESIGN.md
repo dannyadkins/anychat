@@ -220,4 +220,4 @@ I would have offloaded much more of the conversation management logic to the ser
 For example, we pass in the history of messages from the frontend to the API.
 The alternative would be to load the history of messages in the API itself. This would be slightly slower, but it would enable far more flexibility to do things like "find the 10 messages with the highest cosine similarity" that can't be done readily on the client, as well as less complexity over time.
 
-The algorithm design for forking/editing old messages can be much improved in terms of space (for example, not duplicating messagesBeforeThis for every single message to know the history before it).
+The algorithm design for forking/editing old messages can be much improved in terms of space (for example, not duplicating messagesBeforeThis for every single message to know the history before it). I think that algo runtime can also be improved.
