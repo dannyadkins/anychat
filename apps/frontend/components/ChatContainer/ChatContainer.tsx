@@ -4,6 +4,7 @@ import { useChat } from "@/data/useChat";
 import { sendMessage } from "./actions";
 import styles from "./ChatContainer.module.scss";
 import classNames from "classnames";
+import { useRef, useEffect } from "react";
 
 interface IChatProps {
   initialMessages?: any[];
@@ -17,14 +18,26 @@ export function ChatContainer(props: IChatProps) {
     initialMessages,
   });
 
+  const ref = useRef(null);
+  const scrollDown = () => {
+    const chat = ref.current;
+    if (chat) {
+      chat.scrollTop = chat.scrollHeight;
+    }
+  };
+
+  useEffect(() => {
+    scrollDown();
+  }, [messages]);
+
   return (
-    <div className="h-screen flex flex-col items-center">
-      <div className="grow overflow-scroll flex flex-col items-end justify-end w-full">
+    <div className="max-h-screen w-full flex flex-col items-center ">
+      <div className="grow overflow-scroll w-full" ref={ref}>
         {messages.length > 0
           ? messages.map((m) => <Message key={m.id} message={m} />)
           : null}
       </div>
-      <div className={styles.prompt}>
+      <div className={classNames(styles.prompt, "shrink-0")}>
         {/* @ts-ignore */}
         <form
           onSubmit={(e) => {

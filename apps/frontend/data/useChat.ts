@@ -74,6 +74,7 @@ export function useChat({
     try {
       mutateIsLoading(true);
       mutate(newMessages, false);
+      setInput("");
 
       await getGenerationStream(
         `http://localhost:3000/api/conversations/${conversationId}`,
@@ -88,7 +89,6 @@ export function useChat({
       setError(err as Error);
     } finally {
       mutateIsLoading(false);
-      setInput("");
     }
   };
 
