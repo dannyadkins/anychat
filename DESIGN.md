@@ -54,7 +54,7 @@ Cons:
 - data is a bit weird: e.g. main branch messages don't have a parentId but branched ones do
 - if you toggle to a different branch, it will have to load the whole branch down to the leaf. This seems expected, it just might be bad if the branch is massive.
 
-I chose `Approach #3`. If the user wants to keep the UI state by seeing the branch they're currently on, this can just be cached locally for them. Otherwise, loading the original branch seems natural. This is currently implemented in `ChatContainer` and `useChat`.
+I chose `Approach #3`. If the user wants to keep the UI state by seeing the branch they're currently on, this can just be cached locally for them. Otherwise, loading the original branch seems natural. This is currently implemented in `ChatContainer` and `useChat`. It works great!
 
 # API
 
@@ -215,6 +215,8 @@ For fetching chat history, I chose `SWR`. This allows the user to jump between c
 ### Components
 
 # Learnings after implementing
+
+There's a tremendous amount of detail in synchronizing database state and local state. For example, we want to eagerly update UI with branched conversations, so we have some duplicated logic for deriving root IDs and parent IDs.
 
 I would have offloaded much more of the conversation management logic to the server.
 For example, we pass in the history of messages from the frontend to the API.
