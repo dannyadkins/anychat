@@ -63,7 +63,7 @@ export async function GET(
   });
 }
 
-const sendSSE = async (
+export const sendSSE = async (
   writer: WritableStreamDefaultWriter,
   encoder: TextEncoder,
   data: string

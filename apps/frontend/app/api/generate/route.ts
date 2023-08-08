@@ -12,13 +12,13 @@ export const runtime = "edge";
 // const redis = new Redis(); // Configure according to your Redis setup
 
 export async function POST(req: NextRequest) {
-  const { messages } = await req.json();
+  console.log("Generating new message");
+  const { messages, conversationId } = await req.json();
 
   const strippedMessages = messages.map((message: any) => {
     return { content: message.content, role: message.role };
   });
 
-  const convoId = "some-convo-id";
   const userId = "some-user-id";
 
   //   if its already started, error
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   //     return NextResponse.error();
   //   }
 
-  await redis.set(convoId + "-message", "");
+  await redis.set(conversationId + "-message", "");
 
   const configuration = new Configuration({
     apiKey: process.env.OPENAI_API_KEY,
@@ -56,16 +56,16 @@ export async function POST(req: NextRequest) {
         for (const line of lines) {
           const message = line.replace(/^data: /, "");
           //   put in Vercel KV
-          await redis.lpush(convoId + "-tokens", message);
+          await redis.lpush(conversationId + "-tokens", message);
         }
       },
       onStart: async () => {
-        await redis.set(convoId + "-status", "started");
-        await redis.del(convoId + "-tokens");
-        await redis.del(convoId + "-message");
+        await redis.set(conversationId + "-status", "started");
+        await redis.del(conversationId + "-tokens");
+        await redis.del(conversationId + "-message");
       },
       onCompletion: async () => {
-        await redis.set(convoId + "-status", "completed");
+        await redis.set(conversationId + "-status", "completed");
       },
     });
 

@@ -33,7 +33,6 @@ export function useChat({
       fallbackData: initialMessages,
     }
   );
-  console.log("Initial data: ", data);
   const messages = data! || [];
 
   //   TODO: on reconnect, call a "resume" function that hits the resume endpoint, sets loading if needed, and streams back
@@ -83,11 +82,13 @@ export function useChat({
           mutate(tokens, false);
         }
       );
+      console.log("Done generating");
     } catch (err) {
       mutate(previousMessages, false);
       setError(err as Error);
     } finally {
       mutateIsLoading(false);
+      setInput("");
     }
   };
 

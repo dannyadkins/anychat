@@ -12,11 +12,10 @@ interface IChatProps {
 
 export function ChatContainer(props: IChatProps) {
   const { initialMessages, conversationId } = props;
-  const { messages, input, setInput, sendMessage } = useChat({
+  const { messages, input, setInput, sendMessage, isLoading } = useChat({
     conversationId,
     initialMessages,
   });
-  console.log("messages: ", messages);
 
   return (
     <div className="h-screen flex flex-col items-center">
@@ -33,6 +32,7 @@ export function ChatContainer(props: IChatProps) {
             e.preventDefault();
             sendMessage("");
           }}
+          aria-disabled={isLoading}
         >
           <input
             value={input}
@@ -40,6 +40,7 @@ export function ChatContainer(props: IChatProps) {
             onChange={(e) => {
               setInput(e.target.value);
             }}
+            disabled={isLoading}
           />
           {/* <button className="bg-black" type="submit">
             Send

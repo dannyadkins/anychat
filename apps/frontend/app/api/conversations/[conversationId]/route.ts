@@ -1,5 +1,9 @@
 import { getPrismaClient } from "database";
 import { NextRequest, NextResponse } from "next/server";
+import { Redis } from "@upstash/redis";
+import { AIStream, StreamingTextResponse } from "ai";
+
+const redis = Redis.fromEnv();
 
 export async function GET(
   req: NextRequest,
@@ -26,7 +30,6 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { conversationId: string } }
 ) {
-  console.log("POSTING to this");
   const { messages } = await req.json();
   const { conversationId } = params;
 
@@ -46,20 +49,62 @@ export async function POST(
         userId,
       },
     })
-    .catch((e) => {
+    .catch((e: Error) => {
       console.log("Error saving message", e);
     });
 
-  console.log("Saved message to conversation ", conversationId);
-
-  const res = await fetch("http://localhost:3000/api/generate", {
+  const response = await fetch("http://localhost:3000/api/generate", {
     method: "POST",
     body: JSON.stringify({
       messages,
+      conversationId,
     }),
   });
 
-  return NextResponse.json({
-    data: res,
+  const stream = response.body;
+  const transformed = stream?.pipeThrough(
+    aggregatedResponseHandler(conversationId, userId)
+  );
+
+  return new StreamingTextResponse(transformed!);
+}
+
+const aggregatedResponseHandler = (
+  conversationId: string,
+  userId: string
+): TransformStream<any, Uint8Array> => {
+  const textEncoder = new TextEncoder();
+  const textDecoder = new TextDecoder();
+  let aggregatedResponse = "";
+
+  return new TransformStream({
+    async transform(message, controller): Promise<void> {
+      controller.enqueue(message);
+      aggregatedResponse += textDecoder.decode(message);
+    },
+
+    async flush(): Promise<void> {
+      await saveFullResponseToDatabase(
+        aggregatedResponse,
+        conversationId,
+        userId
+      );
+    },
+  });
+};
+
+async function saveFullResponseToDatabase(
+  message: string,
+  conversationId: string,
+  userId: string
+) {
+  const client = getPrismaClient(userId);
+  return await client.message.create({
+    data: {
+      content: message,
+      role: "assistant",
+      conversationId,
+      userId,
+    },
   });
 }
