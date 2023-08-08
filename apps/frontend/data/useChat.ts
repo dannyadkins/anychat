@@ -57,11 +57,14 @@ export function useChat({
   const sendMessage = async (
     content: string,
     parentId?: string,
-    onSend?: (args: any) => any
+    onSend?: (args: any) => any,
+    messageOverride?: any[]
   ) => {
     // TODO if there is a parentId, only pass in messages before that parentId to newMessages
     // TODO add parentId in database
     // TODO save this ID in database as is
+
+    const historyToUse = messageOverride || messagesRef.current;
 
     console.log("Sending message with conversationId: ", conversationId);
     if (!conversationId?.length) {
@@ -85,7 +88,7 @@ export function useChat({
     const previousMessages = messagesRef.current;
 
     console.log("Previous message id: ", previousMessages.at(-1)?.id);
-    const newMessages = messagesRef.current.concat({
+    const newMessages = historyToUse.concat({
       id: userMessageId,
       content: content,
       role: "user",

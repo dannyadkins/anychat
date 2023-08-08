@@ -140,6 +140,10 @@ export function ChatContainer(props: IChatProps) {
                 messages.filter((m2) => m2.parentId === m.parentId).length
               }
               branchToShow={branchToShow[m.parentId]}
+              messagesBeforeThis={messages.slice(
+                0,
+                messages.findIndex((m2) => m2.id === m.id)
+              )}
             />
           ))
         ) : (
@@ -152,9 +156,14 @@ export function ChatContainer(props: IChatProps) {
           onSubmit={(e) => {
             // TODO allow editing of messages
             e.preventDefault();
-            sendMessage(input, messagesToDisplay?.at(-1)?.id || "", () => {
-              setInput("");
-            });
+            sendMessage(
+              input,
+              messagesToDisplay?.at(-1)?.id || "",
+              () => {
+                setInput("");
+              },
+              messagesToDisplay
+            );
           }}
           aria-disabled={isLoading}
         >
@@ -198,6 +207,7 @@ export const Message = (props: any) => {
     decrementBranchToShow,
     branchToShow,
     numBranches,
+    messagesBeforeThis,
   } = props;
   const [isEditing, setIsEditing] = useState(false);
   const [newMessage, setNewMessage] = useState(message.content);
@@ -213,9 +223,9 @@ export const Message = (props: any) => {
       {!isEditing && (
         <span className="relative group">
           {message.content}
-          <span> ID: {message.id} </span>
+          {/* <span> ID: {message.id} </span>
           <span> Parent: {message.parentId} </span>
-          <span> Root: {message.rootId} </span>
+          <span> Root: {message.rootId} </span> */}
 
           {numBranches > 1 && (
             <div className="absolute top-0 -left-16  text-xs">
@@ -267,12 +277,17 @@ export const Message = (props: any) => {
             <button
               onClick={(e) => {
                 e.preventDefault();
-                sendMessage(newMessage, message.parentId, () => {
-                  setIsEditing(false);
-                  incrementBranchToShow(true);
+                sendMessage(
+                  newMessage,
+                  message.parentId,
+                  () => {
+                    setIsEditing(false);
+                    incrementBranchToShow(true);
 
-                  //  TODO mutate messages
-                });
+                    //  TODO mutate messages
+                  },
+                  messagesBeforeThis
+                );
               }}
             >
               Save & submit
