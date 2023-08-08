@@ -87,6 +87,7 @@ export function useChat({
       parentId: parentId || messagesRef.current.at(-1)?.id,
       //   If there is a branch, this shows where the branch started
       rootId: parentId || messagesRef.current.at(-1)?.parentId,
+      conversationId,
     });
 
     try {
@@ -158,6 +159,7 @@ const getGenerationStream = async (
     content: "",
     role: "assistant",
     parentId: messages.at(-1)?.id,
+    conversationId: messages.at(-1)?.conversationId,
   };
 
   while (true) {
