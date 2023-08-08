@@ -140,9 +140,9 @@ export function ChatContainer(props: IChatProps) {
                 messages.filter((m2) => m2.parentId === m.parentId).length
               }
               branchToShow={branchToShow[m.parentId]}
-              messagesBeforeThis={messages.slice(
+              messagesBeforeThis={messagesToDisplay.slice(
                 0,
-                messages.findIndex((m2) => m2.id === m.id)
+                messagesToDisplay.findIndex((m2) => m2.id === m.id)
               )}
             />
           ))
@@ -277,6 +277,8 @@ export const Message = (props: any) => {
             <button
               onClick={(e) => {
                 e.preventDefault();
+                console.log("Sending new message with parentId ", message.id);
+                console.log("Messages before this: ", messagesBeforeThis);
                 sendMessage(
                   newMessage,
                   message.parentId,
