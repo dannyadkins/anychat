@@ -6,13 +6,16 @@ This is a design spec for a clone of ChatGPT.
 
 Core:
 
-- [ ] Messages grouped into conversations
-- [ ] Edit messages & branch conversations
-- [ ] Stream back responses to user
+- [x] Messages grouped into conversations
+- [x] Edit messages & branch conversations
+- [x] Stream back responses to user
 
 Nice-to-haves:
 
+- [ ] Allow user to refresh and not interrupt
 - [ ] Pagination for really long conversations (>100KB)
+- [ ] Abort responses
+- [ ] Regenerate responses
 
 Nonfunctional:
 
@@ -51,7 +54,7 @@ Cons:
 - data is a bit weird: e.g. main branch messages don't have a parentId but branched ones do
 - if you toggle to a different branch, it will have to load the whole branch down to the leaf. This seems expected, it just might be bad if the branch is massive.
 
-I chose `Approach #3`. If the user wants to keep the UI state by seeing the branch they're currently on, this can just be cached locally for them. Otherwise, loading the original branch seems natural.
+I chose `Approach #3`. If the user wants to keep the UI state by seeing the branch they're currently on, this can just be cached locally for them. Otherwise, loading the original branch seems natural. This is currently implemented in `ChatContainer` and `useChat`.
 
 # API
 
@@ -93,6 +96,7 @@ Cons:
 Cons:
 
 - TINY BIT slower because we have Redis as a new middle layer, on the order of 10ms.
+- A ton of load on Redis
 - Added bit of complexity
 
 Pros:
@@ -103,9 +107,9 @@ Pros:
 
 ---
 
-I settled on `Approach #4`.
+I settled on `Approach #3`, but need to migrate away from Next API routes first, as they provide no way to tell if a disconnection occurs like in other API frameworks. I'm planning on moving to Express or maybe Flask.
 
-The user sends a request, the API sends a POST to the model, the model saves tokens directly to Redis. The API then reads from Redis and streams back tokens until they are done (either an interval, or a stop token). Once they are done, it saves to database.
+The user sends a request, the API sends a POST to the model, and if the user disconnects, model saves tokens directly to Redis. When the user reconnects, the API then reads from Redis and streams back tokens until they are done (either an interval, or a stop token). Once they are done, it saves to database.
 
 I chose `Vercel KV` out of ease, but one downside is that it doesn't use Redis Streams, which would be best for this use case. This task is best suited for a more traditional message queue.
 
@@ -123,9 +127,9 @@ userId should be extracted from the headers.
 
 ### Implementation details:
 
-- [ ] Start with Naive Approach B from the chat API
+- [x] Start with Naive Approach B from the chat API
 - [ ] Paginate the conversation history
-- [ ] Cache conversations
+- [x] Cache conversations
 - [ ] Middleware for authentication
 - [ ] Hosted on AWS, deployed with Terraform
 - [ ] Load balancer and autoscaler on AWS
@@ -157,15 +161,23 @@ We have two common queries:
 
 So, we can easily put an index on `conversations` for `userId`, and `messages` for `conversationId`. This is defined in the Prisma schema.
 
+### Implementation
+
+- [x] Basic universal sharded ORM
+- [x] Automated scripts for DB schema sycing (turbo db:sync)
+- [x] Naive mod sharding on userId
+- [ ] Upgrade to consistent hashing
+- [ ] Add indexes
+
 # Frontend
 
 ## Requirements
 
 Core functional requirements:
 
-- [ ] Create a new conversation
-- [ ] Send a message, get response
-- [ ] Edit a message and branch threads
+- [x] Create a new conversation
+- [x] Send a message, get response
+- [x] Edit a message and branch threads
 - [ ] Can't send message if chatbot currently responding
 
 Nice-to-haves:
@@ -182,7 +194,7 @@ Nice-to-haves:
 
 Ignoring:
 
-- [ ] i18n (unclear whether we should )
+- [ ] i18n (unclear whether we should have different models or translate the model response)
 
 ## Implementation
 

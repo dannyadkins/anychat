@@ -75,7 +75,7 @@ export function useChat({
         let { data } = await fetch("http://localhost:3000/api/conversations", {
           method: "POST",
           body: JSON.stringify({
-            title: "New conversation",
+            title: content?.slice(0, 20) || "Untitled",
           }),
           cache: "no-store",
         }).then((res) => res.json());
