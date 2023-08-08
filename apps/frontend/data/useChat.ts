@@ -19,7 +19,6 @@ export function useChat({
   conversationId = "",
   initialMessages = [],
 }: IUseChatOptions) {
-  const [input, setInput] = useState("");
   const [error, setError] = useState<Error | null>(null);
 
   // load initial messages from cache, also TODO: need to figure out how to stream back / append any current stream.
@@ -55,7 +54,11 @@ export function useChat({
   // adds the message to state optimistically
   // sends all the messages to the server
   // gets the streamed back message and adds it in
-  const sendMessage = async (parentId?: string) => {
+  const sendMessage = async (
+    content: string,
+    parentId?: string,
+    onSend?: (args: any) => any
+  ) => {
     // TODO if there is a parentId, only pass in messages before that parentId to newMessages
     // TODO add parentId in database
     // TODO save this ID in database as is
@@ -77,27 +80,31 @@ export function useChat({
       }
     }
     const userMessageId = Math.random().toString(36).substring(7);
+    const responseId = Math.random().toString(36).substring(7);
 
     const previousMessages = messagesRef.current;
+
+    console.log("Previous message id: ", previousMessages.at(-1)?.id);
     const newMessages = messagesRef.current.concat({
       id: userMessageId,
-      content: input,
+      content: content,
       role: "user",
       //   If they want to manually fork (edit an old message), we need to pass in the parentId
       parentId: parentId || messagesRef.current.at(-1)?.id,
       //   If there is a branch, this shows where the branch started
-      rootId: parentId || messagesRef.current.at(-1)?.parentId,
+      rootId: parentId || messagesRef.current.at(-1)?.rootId,
       conversationId,
     });
 
     try {
       mutateIsLoading(true);
       mutate(newMessages, false);
-      setInput("");
+      onSend?.(newMessages);
 
       await getGenerationStream(
         `http://localhost:3000/api/conversations/${conversationId}`,
         newMessages,
+        responseId,
         (tokens) => {
           mutate(tokens, false);
         }
@@ -117,8 +124,6 @@ export function useChat({
   return {
     messages,
     sendMessage,
-    input,
-    setInput,
     isLoading,
   };
 }
@@ -126,6 +131,7 @@ export function useChat({
 const getGenerationStream = async (
   apiUrl: string,
   messages: any[],
+  responseId: string,
   onTokens: (tokens: any[]) => void
 ) => {
   // TODO important replace this with a proper conversation endpoint so it can save stuff
@@ -133,6 +139,7 @@ const getGenerationStream = async (
     method: "POST",
     body: JSON.stringify({
       messages,
+      responseId,
     }),
     cache: "no-store",
   });
@@ -154,12 +161,13 @@ const getGenerationStream = async (
 
   let responseMessage: any = {
     // TODO: get the message ID from the server, or we make it on the client and pass it in
-    // id: replyId,
+    id: responseId,
     createdAt,
     content: "",
     role: "assistant",
     parentId: messages.at(-1)?.id,
     conversationId: messages.at(-1)?.conversationId,
+    rootId: messages.at(-1)?.rootId,
   };
 
   while (true) {

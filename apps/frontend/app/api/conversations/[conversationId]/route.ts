@@ -30,7 +30,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { conversationId: string } }
 ) {
-  const { messages } = await req.json();
+  const { messages, responseId } = await req.json();
   const { conversationId } = params;
 
   const userId = "some-user-id";
@@ -41,6 +41,7 @@ export async function POST(
   await client.message
     .create({
       data: {
+        id: inputMessage.id,
         content: inputMessage.content,
         role: inputMessage.role,
         conversationId,
@@ -63,7 +64,13 @@ export async function POST(
 
   const stream = response.body;
   const transformed = stream?.pipeThrough(
-    aggregatedResponseHandler(conversationId, userId)
+    aggregatedResponseHandler(
+      conversationId,
+      userId,
+      responseId,
+      inputMessage.id,
+      inputMessage.rootId
+    )
   );
 
   return new StreamingTextResponse(transformed!);
@@ -71,7 +78,10 @@ export async function POST(
 
 const aggregatedResponseHandler = (
   conversationId: string,
-  userId: string
+  userId: string,
+  responseId: string,
+  parentId: string,
+  rootId: string
 ): TransformStream<any, Uint8Array> => {
   const textEncoder = new TextEncoder();
   const textDecoder = new TextDecoder();
@@ -87,7 +97,10 @@ const aggregatedResponseHandler = (
       await saveFullResponseToDatabase(
         aggregatedResponse,
         conversationId,
-        userId
+        userId,
+        responseId,
+        parentId,
+        rootId
       );
     },
   });
@@ -96,15 +109,21 @@ const aggregatedResponseHandler = (
 async function saveFullResponseToDatabase(
   message: string,
   conversationId: string,
-  userId: string
+  userId: string,
+  responseId: string,
+  parentId: string,
+  rootId: string
 ) {
   const client = getPrismaClient(userId);
   return await client.message.create({
     data: {
+      id: responseId,
       content: message,
       role: "assistant",
       conversationId,
       userId,
+      parentId,
+      rootId,
     },
   });
 }

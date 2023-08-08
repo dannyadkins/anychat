@@ -7,6 +7,25 @@
     width: 600px;
     display: block;
     margin: auto;
+    // maket he textarea not have any focus or anything different from regular text
+
+    textarea {
+      border: none;
+      background-color: transparent;
+      outline: none;
+      height: auto;
+      resize: none;
+      ::placeholder {
+        color: var(--dark-1);
+      }
+      ::-webkit-scrollbar {
+        width: 0px;
+        background: transparent; /* make scrollbar transparent */
+      }
+      ::-webkit-scrollbar-thumb {
+        background: transparent; /* make scrollbar transparent */
+      }
+    }
   }
   padding: 1rem;
 }

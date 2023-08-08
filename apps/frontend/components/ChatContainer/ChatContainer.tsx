@@ -14,11 +14,13 @@ interface IChatProps {
 
 export function ChatContainer(props: IChatProps) {
   const { initialMessages, conversationId } = props;
-  const { messages, input, setInput, sendMessage, isLoading } = useChat({
+  const { messages, sendMessage, isLoading } = useChat({
     conversationId,
     initialMessages,
   });
   const [model, setModel] = useState("gpt-3.5-turbo");
+
+  const [input, setInput] = useState("");
 
   const ref = useRef<HTMLDivElement>(null);
   const scrollDown = () => {
@@ -36,7 +38,9 @@ export function ChatContainer(props: IChatProps) {
     <div className="max-h-screen w-full flex flex-col items-center ">
       <div className="grow overflow-scroll w-full" ref={ref}>
         {messages.length > 0 ? (
-          messages.map((m) => <Message key={m.id} message={m} />)
+          messages.map((m) => (
+            <Message key={m.id} message={m} sendMessage={sendMessage} />
+          ))
         ) : (
           <ModelSelector setModel={setModel} model={model} />
         )}
@@ -47,7 +51,9 @@ export function ChatContainer(props: IChatProps) {
           onSubmit={(e) => {
             // TODO allow editing of messages
             e.preventDefault();
-            sendMessage("");
+            sendMessage(input, "", () => {
+              setInput("");
+            });
           }}
           aria-disabled={isLoading}
         >
@@ -83,7 +89,11 @@ const ModelSelector = ({ setModel, model }: any) => {
   );
 };
 
-export const Message = ({ message }: any) => {
+export const Message = (props: any) => {
+  const { message, sendMessage } = props;
+  const [isEditing, setIsEditing] = useState(false);
+  const [newMessage, setNewMessage] = useState(message.content);
+
   return (
     <div
       key={message.id}
@@ -92,10 +102,57 @@ export const Message = ({ message }: any) => {
         [styles.message__assistant]: message.role === "assistant",
       })}
     >
-      <span>
-        {message.role === "user" ? "User: " : "AI: "}
-        {message.content}
-      </span>
+      {!isEditing && (
+        <span className="relative group">
+          {message.content}
+          <span>ID: {message.id}</span>
+          <span>PARENT: {message.parentId}</span>
+          <span>ROOT: {message.rootId}</span>
+          {message.role === "user" && (
+            <button
+              className="absolute top-0 right-0 group-hover:opacity-100 opacity-0 transition-opacity duration-200 ease-in-out"
+              onClick={() => setIsEditing(true)}
+            >
+              Edit
+            </button>
+          )}
+        </span>
+      )}
+      {isEditing && (
+        <span>
+          <div className="flex flex-col gap-2">
+            <textarea
+              value={newMessage}
+              onChange={(e) => {
+                setNewMessage(e.target.value);
+              }}
+              className="bg-transparent"
+            />
+            {/* TODO make this a class and pass in primary */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                sendMessage(newMessage, message.parentId, () => {
+                  setIsEditing(false);
+                  //  TODO mutate messages
+                });
+              }}
+            >
+              Save & submit
+            </button>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                console.log("Cancelling!");
+                setIsEditing(false);
+                setNewMessage(message.content);
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </span>
+      )}
     </div>
   );
 };
