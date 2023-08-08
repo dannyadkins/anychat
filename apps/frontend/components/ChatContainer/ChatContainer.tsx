@@ -4,7 +4,8 @@ import { useChat } from "@/data/useChat";
 import { sendMessage } from "./actions";
 import styles from "./ChatContainer.module.scss";
 import classNames from "classnames";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
+import { Dropdown } from "../Dropdown/Dropdown";
 
 interface IChatProps {
   initialMessages?: any[];
@@ -17,8 +18,9 @@ export function ChatContainer(props: IChatProps) {
     conversationId,
     initialMessages,
   });
+  const [model, setModel] = useState("gpt-3.5-turbo");
 
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
   const scrollDown = () => {
     const chat = ref.current;
     if (chat) {
@@ -33,9 +35,11 @@ export function ChatContainer(props: IChatProps) {
   return (
     <div className="max-h-screen w-full flex flex-col items-center ">
       <div className="grow overflow-scroll w-full" ref={ref}>
-        {messages.length > 0
-          ? messages.map((m) => <Message key={m.id} message={m} />)
-          : null}
+        {messages.length > 0 ? (
+          messages.map((m) => <Message key={m.id} message={m} />)
+        ) : (
+          <ModelSelector setModel={setModel} model={model} />
+        )}
       </div>
       <div className={classNames(styles.prompt, "shrink-0")}>
         {/* @ts-ignore */}
@@ -63,6 +67,21 @@ export function ChatContainer(props: IChatProps) {
     </div>
   );
 }
+
+const ModelSelector = ({ setModel, model }: any) => {
+  return (
+    <Dropdown>
+      {/* <Dropdown.Items>
+        <Dropdown.Item onSelect={() => setModel("gpt-3.5-turbo")}>
+          GPT-3.5 Turbo
+        </Dropdown.Item>
+        <Dropdown.Item onSelect={() => setModel("llama-2-3b")}>
+          LLaMa-2
+        </Dropdown.Item>
+      </Dropdown.Items> */}
+    </Dropdown>
+  );
+};
 
 export const Message = ({ message }: any) => {
   return (

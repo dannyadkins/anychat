@@ -22,6 +22,7 @@ export async function Sidebar() {
       next: {
         tags: ["conversations"],
       },
+      cache: "no-store",
     }
   ).then((res) => {
     return res.json();

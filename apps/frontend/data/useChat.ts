@@ -2,9 +2,10 @@
 
 import useSWR, { KeyedMutator } from "swr";
 import { useRef, useEffect, useState } from "react";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 interface IUseChatOptions {
-  conversationId: string;
+  conversationId?: string;
   parentMessageId?: string;
   initialMessages?: any[];
 }
@@ -15,7 +16,7 @@ interface IUseChatOptions {
  *
  */
 export function useChat({
-  conversationId,
+  conversationId = "",
   initialMessages = [],
 }: IUseChatOptions) {
   const [input, setInput] = useState("");
@@ -58,6 +59,23 @@ export function useChat({
     // TODO if there is a parentId, only pass in messages before that parentId to newMessages
     // TODO add parentId in database
     // TODO save this ID in database as is
+
+    console.log("Sending message with conversationId: ", conversationId);
+    if (!conversationId?.length) {
+      if (messages?.at(-1)?.conversationId) {
+        conversationId = messages?.at(-1)?.conversationId;
+      } else {
+        // TODO: create a new conversation, send message, router refresh
+        let { data } = await fetch("http://localhost:3000/api/conversations", {
+          method: "POST",
+          body: JSON.stringify({
+            title: "New conversation",
+          }),
+          cache: "no-store",
+        }).then((res) => res.json());
+        conversationId = data;
+      }
+    }
     const userMessageId = Math.random().toString(36).substring(7);
 
     const previousMessages = messagesRef.current;
