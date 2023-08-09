@@ -9,13 +9,22 @@
 
   &.primary {
     background-color: var(--primary-0);
-    color: var(--light-0);
+    color: var(--light-1);
     border: 1px solid var(--primary-0);
+    &:hover {
+      background-color: var(--primary-1);
+      border: 1px solid var(--primary-1);
+    }
   }
 
   &.transparent {
     background-color: transparent;
-    color: var(--light-0);
-    border: 1px solid var(--light-0);
+    color: var(--light-2);
+    border: 1px solid var(--light-2);
+
+    &:hover {
+      background-color: var(--light-2);
+      color: var(--dark-0);
+    }
   }
 }
