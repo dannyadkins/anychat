@@ -48,12 +48,6 @@ export function ChatContainer(props: IChatProps) {
       // for each message with many children, construct "branch" objects, which represent each children and each childrens' descendants, until another branch is seen
       // for each message with branches, have a state var that tracks which branch is chosen, default 0
 
-      // Construct id2message map
-      const id2message = messages.reduce((acc, m) => {
-        acc[m.id] = m;
-        return acc;
-      }, {});
-
       // Construct parent2children map
       const parent2children = messages.reduce((acc, m) => {
         acc[m.id] = messages.filter((m2) => m2.parentId === m.id);
@@ -86,16 +80,8 @@ export function ChatContainer(props: IChatProps) {
         }
       }
       return messagesToShow;
-
-      // return messages.map((m) => {
-      //   const children = messages.filter((m2) => m2.parentId === m.id);
-      //   return {
-      //     ...m,
-      //     numChildren: children.length,
-      //   };
-      // });
     },
-    [messages, branchToShow]
+    [branchToShow, messages]
   );
 
   useEffect(() => {
@@ -109,43 +95,51 @@ export function ChatContainer(props: IChatProps) {
     <div className="max-h-screen w-full flex flex-col items-center ">
       <div className="grow overflow-scroll w-full" ref={ref}>
         {messages.length > 0 ? (
-          messagesToDisplay.map((m) => (
-            <Message
-              key={m.id}
-              message={m}
-              sendMessage={sendMessage}
-              incrementBranchToShow={(override?: boolean) => {
-                setBranchToShow((old: any) => {
-                  return {
-                    ...old,
-                    [m.parentId]: override
-                      ? (old[m.parentId] || 0) + 1
-                      : Math.min(
-                          (old[m.parentId] || 0) + 1,
-                          messages.filter((m2) => m2.parentId === m.parentId)
-                            .length - 1
-                        ),
-                  };
-                });
-              }}
-              decrementBranchToShow={() => {
-                setBranchToShow((old: any) => {
-                  return {
-                    ...old,
-                    [m.parentId]: Math.max((old[m.parentId] || 0) - 1, 0),
-                  };
-                });
-              }}
-              numBranches={
-                messages.filter((m2) => m2.parentId === m.parentId).length
-              }
-              branchToShow={branchToShow[m.parentId]}
-              messagesBeforeThis={messagesToDisplay.slice(
-                0,
-                messagesToDisplay.findIndex((m2) => m2.id === m.id)
-              )}
-            />
-          ))
+          messagesToDisplay.map((m) => {
+            const numBranches = messages.filter(
+              (m2) => m2.parentId === m.parentId
+            )?.length;
+
+            return (
+              <Message
+                key={m.id}
+                message={m}
+                sendMessage={sendMessage}
+                setBranchToShow={(idx: number) => {
+                  setBranchToShow((old: any) => {
+                    return {
+                      ...old,
+                      [m.parentId]: idx,
+                    };
+                  });
+                }}
+                incrementBranchToShow={(override?: boolean) => {
+                  setBranchToShow((old: any) => {
+                    return {
+                      ...old,
+                      [m.parentId]: override
+                        ? (old[m.parentId] || 0) + 1
+                        : Math.min((old[m.parentId] || 0) + 1, numBranches - 1),
+                    };
+                  });
+                }}
+                decrementBranchToShow={() => {
+                  setBranchToShow((old: any) => {
+                    return {
+                      ...old,
+                      [m.parentId]: Math.max((old[m.parentId] || 0) - 1, 0),
+                    };
+                  });
+                }}
+                numBranches={numBranches}
+                branchToShow={branchToShow[m.parentId]}
+                messagesBeforeThis={messagesToDisplay.slice(
+                  0,
+                  messagesToDisplay.findIndex((m2) => m2.id === m.id)
+                )}
+              />
+            );
+          })
         ) : (
           <ModelSelector setModel={setModel} model={model} />
         )}
@@ -205,6 +199,7 @@ export const Message = (props: any) => {
     sendMessage,
     incrementBranchToShow,
     decrementBranchToShow,
+    setBranchToShow,
     branchToShow,
     numBranches,
     messagesBeforeThis,
@@ -277,16 +272,17 @@ export const Message = (props: any) => {
             <button
               onClick={(e) => {
                 e.preventDefault();
-                console.log("Sending new message with parentId ", message.id);
+                console.log(
+                  "Sending new message with parentId ",
+                  message.parentId
+                );
                 console.log("Messages before this: ", messagesBeforeThis);
                 sendMessage(
                   newMessage,
                   message.parentId,
                   () => {
                     setIsEditing(false);
-                    incrementBranchToShow(true);
-
-                    //  TODO mutate messages
+                    setBranchToShow(numBranches);
                   },
                   messagesBeforeThis
                 );

@@ -66,7 +66,6 @@ export function useChat({
 
     const historyToUse = messageOverride || messagesRef.current;
 
-    console.log("Sending message with conversationId: ", conversationId);
     if (!conversationId?.length) {
       if (messages?.at(-1)?.conversationId) {
         conversationId = messages?.at(-1)?.conversationId;
@@ -87,8 +86,7 @@ export function useChat({
 
     const previousMessages = messagesRef.current;
 
-    console.log("Previous message id: ", previousMessages.at(-1)?.id);
-    const newMessages = historyToUse.concat({
+    const newMessage = {
       id: userMessageId,
       content: content,
       role: "user",
@@ -97,19 +95,22 @@ export function useChat({
       //   If there is a branch, this shows where the branch started
       rootId: parentId || messagesRef.current.at(-1)?.rootId,
       conversationId,
-    });
+    };
+
+    const newUnfilteredMessages = previousMessages.concat(newMessage);
+    const newBranchedMessages = historyToUse.concat(newMessage);
 
     try {
       mutateIsLoading(true);
-      mutate(newMessages, false);
-      onSend?.(newMessages);
+      mutate(newUnfilteredMessages, false);
+      onSend?.(newUnfilteredMessages);
 
       await getGenerationStream(
         `http://localhost:3000/api/conversations/${conversationId}`,
-        newMessages,
+        newBranchedMessages,
         responseId,
         (tokens) => {
-          mutate(tokens, false);
+          mutate([...newUnfilteredMessages, { ...tokens }], false);
         }
       );
       console.log("Done generating");
@@ -182,7 +183,7 @@ const getGenerationStream = async (
 
     responseMessage["content"] = fullResponseText;
 
-    onTokens([...messages, { ...responseMessage }]);
+    onTokens(responseMessage);
   }
   return responseMessage;
 };
