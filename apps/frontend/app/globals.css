@@ -12,10 +12,13 @@ body {
 
   --light-1: rgb(236, 236, 241);
 
+  --primary-0: rgb(16, 163, 127);
+  --primary-1: rgb(11, 113, 88);
+
   background-color: var(--dark-2);
   color: var(--light-1);
 
-  --hue-rotation: 0deg;
+  --hue-rotation: 90deg;
 
   /* rotate hue */
   filter: hue-rotate(var(--hue-rotation));

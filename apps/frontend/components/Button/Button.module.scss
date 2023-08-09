@@ -1,0 +1,12 @@
+.button {
+  display: inline-block;
+  padding: 0.5rem;
+  border-radius: 6px;
+  width: auto;
+
+  &.primary {
+    background-color: var(--primary-0);
+    color: var(--light-0);
+    border: 1px solid var(--primary-0);
+  }
+}

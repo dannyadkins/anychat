@@ -6,6 +6,7 @@ import styles from "./ChatContainer.module.scss";
 import classNames from "classnames";
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Dropdown } from "../Dropdown/Dropdown";
+import { Button } from "../Button/Button";
 
 interface IChatProps {
   initialMessages?: any[];
@@ -269,14 +270,9 @@ export const Message = (props: any) => {
               className="bg-transparent"
             />
             {/* TODO make this a class and pass in primary */}
-            <button
+            <Button
               onClick={(e) => {
                 e.preventDefault();
-                console.log(
-                  "Sending new message with parentId ",
-                  message.parentId
-                );
-                console.log("Messages before this: ", messagesBeforeThis);
                 sendMessage(
                   newMessage,
                   message.parentId,
@@ -289,17 +285,17 @@ export const Message = (props: any) => {
               }}
             >
               Save & submit
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="secondary"
               onClick={(e) => {
                 e.preventDefault();
-                console.log("Cancelling!");
                 setIsEditing(false);
                 setNewMessage(message.content);
               }}
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </span>
       )}
