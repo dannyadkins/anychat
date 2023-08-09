@@ -261,41 +261,43 @@ export const Message = (props: any) => {
       )}
       {isEditing && (
         <span>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 items-center">
             <textarea
               value={newMessage}
               onChange={(e) => {
                 setNewMessage(e.target.value);
               }}
-              className="bg-transparent"
+              className="bg-transparent w-full"
             />
             {/* TODO make this a class and pass in primary */}
-            <Button
-              onClick={(e) => {
-                e.preventDefault();
-                sendMessage(
-                  newMessage,
-                  message.parentId,
-                  () => {
-                    setIsEditing(false);
-                    setBranchToShow(numBranches);
-                  },
-                  messagesBeforeThis
-                );
-              }}
-            >
-              Save & submit
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={(e) => {
-                e.preventDefault();
-                setIsEditing(false);
-                setNewMessage(message.content);
-              }}
-            >
-              Cancel
-            </Button>
+            <div className="flex flex-row gap-2">
+              <Button
+                onClick={(e) => {
+                  e.preventDefault();
+                  sendMessage(
+                    newMessage,
+                    message.parentId,
+                    () => {
+                      setIsEditing(false);
+                      setBranchToShow(numBranches);
+                    },
+                    messagesBeforeThis
+                  );
+                }}
+              >
+                Save & submit
+              </Button>
+              <Button
+                variant="transparent"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsEditing(false);
+                  setNewMessage(message.content);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </span>
       )}
