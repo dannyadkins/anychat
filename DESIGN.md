@@ -68,15 +68,14 @@ Ideally, we cache this and invalidate whenever a user starts a new chat. Caching
 
 This service takes a user's message, loads some history (e.g. 5 most recent messages), and calls the model inference service (see below; we start with OpenAI ChatGPT but goal is to have a custom model served).
 
-The core question is how to stream back tokens and save them to the DB in a manner that provides the best UX.
+The core question is how to stream back tokens and save them to the DB in a manner that provides the best UX. By "best UX", I mean fastest and also doesn't break the model's response on disconnect (like ChatGPT does). 
 
-I chose `server-sent events` because they are (a tiny bit) faster than WebSockets, easy way to provide realtime data, and the connection is basically unidirectional (chatbot just responding to user).
+I chose `server-sent events` because they are (a tiny bit) faster than WebSockets, easy way to provide realtime updates, and the connection is basically unidirectional (chatbot just responding to user). WebSockets would make sense if the user was sending more realtime data and the connection was more bidirectional. 
 
 For the response logic, here are the competing solutions:
 
 1. Naive approach A: Save every token that is generated to the DB directly, and user keeps reading from DB using polling.
-
-Critical flaw: way way way too many writes and reads, obviously not smart.
+- Critical flaw: way way way too many writes and reads, obviously not smart.
 
 2. Naive approach B: Stream every token back to the client, and only save to DB when the stream is done.
 - Critical flaw: if the client disconnects, or the stream is otherwise interrupted, all tokens will be lost. This happens on real ChatGPT (try refreshing mid-message), and it is infuriating :)
@@ -139,7 +138,7 @@ The benefits include easier migrations, ability to keep the DB schema synced wit
 
 ### Sharding
 
-The shard key is the userId.
+The shard key is the userId. This is clearly the right choice: users only need to fetch their own data, they often want to fetch all or most of their data so it shouldn't be split up, and each individual user does not have enough data that it would have to be split up across nodes. This means that popular queries like "get messages" and "get conversations" can interact with exactly 1 shard and will have all the requesite data. 
 
 I shard across 2 Postgres instances for example, but can grow to many more.
 
