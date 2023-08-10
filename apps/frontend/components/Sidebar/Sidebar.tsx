@@ -15,13 +15,16 @@ export async function Sidebar() {
   const userId = "someUserId";
   const client = getPrismaClient(userId);
 
-  const { data: conversations } = await fetch(`api/conversations`, {
-    method: "GET",
-    next: {
-      tags: ["conversations"],
-    },
-    cache: "no-store",
-  }).then((res) => {
+  const { data: conversations } = await fetch(
+    `http://localhost:3000/api/conversations`,
+    {
+      method: "GET",
+      next: {
+        tags: ["conversations"],
+      },
+      cache: "no-store",
+    }
+  ).then((res) => {
     return res.json();
   });
 

@@ -1,4 +1,4 @@
-// app/api/openai.js
+// app/http://localhost:3000/api/openai.js
 import { Configuration, OpenAIApi } from "openai-edge";
 // import Redis from "ioredis";
 import { NextResponse, NextRequest } from "next/server";

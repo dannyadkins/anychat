@@ -22,7 +22,10 @@ export function useChat({
   const [error, setError] = useState<Error | null>(null);
 
   const { data, mutate } = useSWR<any[]>(
-    [`api/conversations/${conversationId}`, conversationId],
+    [
+      `http://localhost:3000/api/conversations/${conversationId}`,
+      conversationId,
+    ],
     null,
     {
       fallbackData: initialMessages,
@@ -60,7 +63,7 @@ export function useChat({
       if (messages?.at(-1)?.conversationId) {
         conversationId = messages?.at(-1)?.conversationId;
       } else {
-        let { data } = await fetch("api/conversations", {
+        let { data } = await fetch("http://localhost:3000/api/conversations", {
           method: "POST",
           body: JSON.stringify({
             title: content?.slice(0, 20) || "Untitled",
@@ -95,7 +98,7 @@ export function useChat({
       onSend?.(newUnfilteredMessages);
 
       await getGenerationStream(
-        `api/conversations/${conversationId}`,
+        `http://localhost:3000/api/conversations/${conversationId}`,
         newBranchedMessages,
         responseId,
         (tokens) => {

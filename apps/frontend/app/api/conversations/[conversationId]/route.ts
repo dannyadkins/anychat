@@ -51,7 +51,7 @@ export async function POST(
       console.log("Error saving message", e);
     });
 
-  const response = await fetch("api/generate", {
+  const response = await fetch("http://localhost:3000/api/generate", {
     method: "POST",
     body: JSON.stringify({
       messages,

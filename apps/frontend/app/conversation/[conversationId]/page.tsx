@@ -7,7 +7,7 @@ export default async function ConversationPage({ params }: { params: any }) {
   const { conversationId } = params;
 
   const { data: messages } = await fetch(
-    `api/conversations/${conversationId}`,
+    `http://localhost:3000/api/conversations/${conversationId}`,
     {
       method: "GET",
       next: {
