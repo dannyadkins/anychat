@@ -1,7 +1,6 @@
 "use client";
 
-import { useChat } from "@/data/useChat";
-import { sendMessage } from "./actions";
+import { useChat } from "@/libs/useChat";
 import styles from "./ChatContainer.module.scss";
 import classNames from "classnames";
 import { useRef, useEffect, useState, useCallback } from "react";
@@ -13,6 +12,11 @@ interface IChatProps {
   conversationId: string;
 }
 
+const modelNames = {
+  "gpt-3.5-turbo": "GPT-3.5 Turbo",
+  "llama-2-3b": "LLaMa-2",
+};
+
 export function ChatContainer(props: IChatProps) {
   const { initialMessages, conversationId } = props;
   const { messages, sendMessage, isLoading } = useChat({
@@ -21,7 +25,7 @@ export function ChatContainer(props: IChatProps) {
   });
 
   const [messagesToDisplay, setMessagesToDisplay] = useState(messages);
-  const [model, setModel] = useState("gpt-3.5-turbo");
+  const [model, setModel] = useState<keyof typeof modelNames>("gpt-3.5-turbo");
 
   const [branchToShow, setBranchToShow] = useState<any>({});
 
@@ -142,7 +146,10 @@ export function ChatContainer(props: IChatProps) {
             );
           })
         ) : (
-          <ModelSelector setModel={setModel} model={model} />
+          <></>
+          // <div className="w-full flex flex-row justify-center my-8">
+          //   <ModelSelector setModel={setModel} model={model} />
+          // </div>
         )}
       </div>
       <div className={classNames(styles.prompt, "shrink-0")}>
@@ -160,7 +167,8 @@ export function ChatContainer(props: IChatProps) {
               messagesToDisplay
             );
           }}
-          aria-disabled={isLoading}
+          role="form"
+          aria-label="Send a message"
         >
           <input
             value={input}
@@ -179,17 +187,26 @@ export function ChatContainer(props: IChatProps) {
   );
 }
 
-const ModelSelector = ({ setModel, model }: any) => {
+const ModelSelector = ({
+  setModel,
+  model,
+}: {
+  setModel: (model: keyof typeof modelNames) => void;
+  model: keyof typeof modelNames;
+}) => {
   return (
     <Dropdown>
-      {/* <Dropdown.Items>
-        <Dropdown.Item onSelect={() => setModel("gpt-3.5-turbo")}>
+      <Dropdown.Button>
+        <div className={styles.modelSelector}>{modelNames[model]}</div>
+      </Dropdown.Button>
+      <Dropdown.Items>
+        <Dropdown.Item onClick={() => setModel("gpt-3.5-turbo")}>
           GPT-3.5 Turbo
         </Dropdown.Item>
-        <Dropdown.Item onSelect={() => setModel("llama-2-3b")}>
+        <Dropdown.Item onClick={() => setModel("llama-2-3b")}>
           LLaMa-2
         </Dropdown.Item>
-      </Dropdown.Items> */}
+      </Dropdown.Items>
     </Dropdown>
   );
 };

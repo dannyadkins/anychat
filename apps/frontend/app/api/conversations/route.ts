@@ -1,9 +1,9 @@
 import { getPrismaClient } from "database";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
-const userId = "some-user-id";
+const userId = "someUserId";
 
 export async function POST(req: NextRequest) {
   const { title } = await req.json();
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  revalidatePath("http://localhost:3000/api/conversations");
+  revalidateTag("conversations");
 
   return NextResponse.json({
     data: conversation.id,

@@ -4,11 +4,8 @@ import classNames from "classnames";
 import styles from "./Sidebar.module.scss";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { useSelectedLayoutSegment } from "next/navigation";
 
 export function ConversationList({ conversations }: { conversations: any[] }) {
-  const segment = useSelectedLayoutSegment();
-  console.log("Segment: ", segment);
   return (
     <>
       <AnimatePresence>

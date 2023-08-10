@@ -4,13 +4,12 @@ import { Redis } from "@upstash/redis";
 import { AIStream, StreamingTextResponse } from "ai";
 
 const redis = Redis.fromEnv();
+const userId = "someUserId";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { conversationId: string } }
 ) {
-  const userId = "some-user-id";
-
   // TODO ensure the user can only get their own messages
 
   const { conversationId } = params;
@@ -33,8 +32,6 @@ export async function POST(
   const { messages, responseId } = await req.json();
   const { conversationId } = params;
 
-  const userId = "some-user-id";
-
   const inputMessage = messages[messages.length - 1];
 
   const client = getPrismaClient(userId);
@@ -54,7 +51,7 @@ export async function POST(
       console.log("Error saving message", e);
     });
 
-  const response = await fetch("http://localhost:3000/api/generate", {
+  const response = await fetch("api/generate", {
     method: "POST",
     body: JSON.stringify({
       messages,
