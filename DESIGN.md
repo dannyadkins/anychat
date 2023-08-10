@@ -36,23 +36,21 @@ Options:
 
 1. Each message has a parentId corresponding to the previous message.
 
-Cons:
+- Cons:
 
-- doesn't handle parallel messages, e.g. if I have 5 messages from different branches but no joint parent, which ones do I show? To fix, I would have to keep sending requests for parents, which would be extremely slow.
+  - doesn't handle parallel messages, e.g. if I have 5 messages from different branches but no joint parent, which ones do I show? To fix, I would have to keep sending requests for parents, which would be extremely slow.
 
 2. Each message has a parentId corresponding to where the branching occurred.
 
-Critical flaw:
-
-- when you create a branch on an otherwise unbranched thread, you have to let all the messages in that thread know that they now are part of a branch. Basically, all messages that come after X (the fork) need to now have parentId=forkMessageId. That's a second request, which makes it slower (but can be done async?).
+- Critical flaw:
+  - when you create a branch on an otherwise unbranched thread, you have to let all the messages in that thread know that they now are part of a branch. Basically, all messages that come after X (the fork) need to now have parentId=forkMessageId. That's a second request, which makes it slower (but can be done async?).
 
 3. Always show from the original branch first (fetch most recent X messages where parentId=null)
 
-Cons:
-
-- if a different branch is fresher or longer, it still doesn't get shown. Bad UX.
-- data is a bit weird: e.g. main branch messages don't have a parentId but branched ones do
-- if you toggle to a different branch, it will have to load the whole branch down to the leaf. This seems expected, it just might be bad if the branch is massive.
+- Cons:
+  - if a different branch is fresher or longer, it still doesn't get shown. Bad UX.
+  - data is a bit weird: e.g. main branch messages don't have a parentId but branched ones do
+  - if you toggle to a different branch, it will have to load the whole branch down to the leaf. This seems expected, it just might be bad if the branch is massive.
 
 I chose `Approach #3`. If the user wants to keep the UI state by seeing the branch they're currently on, this can just be cached locally for them. Otherwise, loading the original branch seems natural. This is currently implemented in `ChatContainer` and `useChat`. It works great!
 
@@ -81,41 +79,35 @@ For the response logic, here are the competing solutions:
 Critical flaw: way way way too many writes and reads, obviously not smart.
 
 2. Naive approach B: Stream every token back to the client, and only save to DB when the stream is done.
-
-Critical flaw: if the client disconnects, or the stream is otherwise interrupted, all tokens will be lost. This happens on real ChatGPT (try refreshing mid-message), and it is infuriating :)
+- Critical flaw: if the client disconnects, or the stream is otherwise interrupted, all tokens will be lost. This happens on real ChatGPT (try refreshing mid-message), and it is infuriating :)
 
 3. Save to DB after full message. If the user disconnects, start putting response tokens in Redis. If they reconnect or request, pull from Redis for most recent.
 
-Cons:
-
-- It is unclear how to start re-streaming the new tokens back to the user.
-- If the connection between this service and the model inference service is interrupted, the whole response is moot.
+- Cons:
+  - It is unclear how to start re-streaming the new tokens back to the user.
+  - If the connection between this service and the model inference service is interrupted, the whole response is moot.
+  - Added bit of complexity 
 
 4. Model inference service saves tokens to Redis directly, using a key for the conversation ID. When the user wants to see response, just read from Redis.
 
-Cons:
+- Cons:
+  - TINY BIT slower because we have Redis as a new middle layer, on the order of 10ms.
+  - A ton of load on Redis, much unnecessary.
 
-- TINY BIT slower because we have Redis as a new middle layer, on the order of 10ms.
-- A ton of load on Redis
-- Added bit of complexity
-
-Pros:
-
-- Robust: Ensures all tokens eventually get seen by the user, even if disconnections happen
-- Logic for streaming back is also reusable for the GET /conversations/[conversationId]/current
-- Also allows us to easily stop the user from sending multiple messages in a row (if there are tokens in Redis, return an error)
-
----
+- Pros:
+  - Robust: Ensures all tokens eventually get seen by the user, even if disconnections happen
+  - Logic for streaming back is also reusable for the GET /conversations/[conversationId]/current
+  - Also allows us to easily stop the user from sending multiple messages in a row (if there are tokens in Redis, return an error)
 
 I settled on `Approach #3`, but need to migrate away from Next API routes first, as they provide no way to tell if a disconnection occurs like in other API frameworks. I'm planning on moving to Express or maybe Flask.
 
 The user sends a request, the API sends a POST to the model, and if the user disconnects, model saves tokens directly to Redis. When the user reconnects, the API then reads from Redis and streams back tokens until they are done (either an interval, or a stop token). Once they are done, it saves to database.
 
-I chose `Vercel KV` out of ease, but one downside is that it doesn't use Redis Streams, which would be best for this use case. This task is best suited for a more traditional message queue.
+I chose `Vercel KV` out of ease, but one downside is that it doesn't support Redis Streams, which would be best for this use case. This task is best suited for a more traditional message queue.
 
 ### GET /conversations/[conversationId]/history: get the history of a chat
 
-Simple request to the DB. Will paginate in future.
+Will paginate in future. Once I do, it will use the structure described above: load the leftmost branch first. 
 
 ### GET /conversations/[conversationId]/current: get the current streaming response for a chat
 
@@ -125,11 +117,12 @@ Uses the same functionality as the POST /conversations/[conversationId] handler.
 
 userId should be extracted from the headers.
 
+Load balancing and autoscaling is being done by Vercel right now, but want to switch to ECS + Elastic Load Balancing. 
+
 ### Implementation details:
 
 - [x] Start with Naive Approach B from the chat API
 - [ ] Paginate the conversation history
-- [x] Cache conversations
 - [ ] Middleware for authentication
 - [ ] Hosted on AWS, deployed with Terraform
 - [ ] Load balancer and autoscaler on AWS
@@ -208,11 +201,22 @@ We server-side render everything that is non-interactive to the client (which is
 
 For fetching conversation list, I chose to do this on the server. The benefit is that it can be a lot of data and HTML, and the server can do this quickly and get a fast time-to-meaningful-paint for the user. The downside is that it's a heavier load on the server. Furthermore, it makes it easy to handle caching, especially with NextJS, as we can just cache the response on the server and explicitly revalidate it when a new conversation is created.
 
-For fetching chat history, I chose `SWR`. This allows the user to jump between chat windows without having to wait to see chat data, by storing the response data in the global SWR cache.
+For fetching chat history, I chose `SWR`. This allows the user to jump between chat windows without having to wait to see chat data, by storing the response data in the global SWR cache. We can easily mutate the SWR cache when we receive new tokens. 
 
-### Pages
+I'm exploring using `IndexedDB` to store the SWR cache, so that different browser windows can have synchronized data. It adds a bit of complexity. 
 
-### Components
+# Model inference
+
+Server for any model on huggingface, that streams back results.
+
+Nvidia's Triton Inference Server is the most production-grade product out there, but I wanted to try to implement from scratch.
+
+Still learning here on how to make responses as fast as possible.
+
+Implementing:
+
+- [ ] KV cache using HuggingFace's past_key_values and a Flask LRUCache
+- [ ]
 
 # Learnings after implementing
 
