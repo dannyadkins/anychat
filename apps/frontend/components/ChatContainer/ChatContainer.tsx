@@ -217,20 +217,17 @@ export const Message = (props: any) => {
       })}
     >
       {!isEditing && (
-        <span className="relative group">
+        <span className={classNames(styles.message__inner, "relative group")}>
           {message.content}
-          {/* <span> ID: {message.id} </span>
-          <span> Parent: {message.parentId} </span>
-          <span> Root: {message.rootId} </span> */}
 
           {numBranches > 1 && (
             <div className="absolute top-0 -left-16  text-xs">
-              <div className="flex flex-row gap-1 w-[40px] items-start h-[1.75em]">
+              <div className="flex flex-row gap-1 w-[40px]  h-[1.6em] items-end">
                 <span
                   onClick={() => {
                     decrementBranchToShow();
                   }}
-                  className="opacity-50 hover:opacity-100 transition-opacity duration-200 ease-in-out cursor-pointer"
+                  className={styles.counterButton}
                 >
                   {"<"}
                 </span>
@@ -241,7 +238,7 @@ export const Message = (props: any) => {
                   onClick={() => {
                     incrementBranchToShow();
                   }}
-                  className="opacity-50 hover:opacity-100 transition-opacity duration-200 ease-in-out cursor-pointer"
+                  className={styles.counterButton}
                 >
                   {">"}
                 </span>
@@ -260,7 +257,7 @@ export const Message = (props: any) => {
         </span>
       )}
       {isEditing && (
-        <span>
+        <span className={styles.message__inner}>
           <div className="flex flex-col gap-2 items-center">
             <textarea
               value={newMessage}

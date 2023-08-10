@@ -3,7 +3,22 @@
 
 .message {
   width: 100%;
-  span {
+
+  .counterButton {
+    opacity: 0.5;
+    cursor: pointer;
+    padding-left: 0.25rem; /* px-1 corresponds to 0.25rem */
+    padding-right: 0.25rem; /* px-1 corresponds to 0.25rem */
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+    user-select: none;
+    transition: opacity 200ms ease-in-out;
+    &:hover {
+      opacity: 1; /* 100% opacity on hover */
+    }
+  }
+
+  .message__inner {
     width: 600px;
     display: block;
     margin: auto;

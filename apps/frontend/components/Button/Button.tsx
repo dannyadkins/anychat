@@ -1,12 +1,10 @@
-// super clean button with variants
-
 import classNames from "classnames";
 import styles from "./Button.module.scss";
 
 interface IButtonProps {
   children: React.ReactNode;
   className?: string;
-  variant?: "primary" | "secondary" | "unstyled";
+  variant?: "primary" | "secondary" | "transparent" | "unstyled";
   onClick?: (e: any) => void;
 }
 
