@@ -16,6 +16,7 @@ Nice-to-haves:
 - [ ] Pagination for really long conversations (>100KB)
 - [ ] Abort responses
 - [ ] Regenerate responses
+- [ ] Load testing
 
 Nonfunctional:
 
