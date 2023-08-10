@@ -35,25 +35,20 @@ Furthermore, we need to be able to receive the most recent messages for a conver
 
 Options:
 
-1. Each message has a parentId corresponding to the previous message.
+1. Each message has a parentId corresponding to the previous message. Fetch most recent.
 
 - Cons:
 
-  - doesn't handle parallel messages, e.g. if I have 5 messages from different branches but no joint parent, which ones do I show? To fix, I would have to keep sending requests for parents, which would be extremely slow.
+  - doesn't handle parallel messages, e.g. if I have 5 messages from different branches but no joint parent is loaded in the first "page", which ones do I show? To fix, I would have to keep sending requests for parents, which would be extremely slow.
 
-2. Each message has a parentId corresponding to where the branching occurred.
-
-- Critical flaw:
-  - when you create a branch on an otherwise unbranched thread, you have to let all the messages in that thread know that they now are part of a branch. Basically, all messages that come after X (the fork) need to now have parentId=forkMessageId. That's a second request, which makes it slower (but can be done async?).
-
-3. Always show from the original branch first (fetch most recent X messages where parentId=null)
+2. Always show from the original branch first (fetch most recent X messages where parentId=null). Each parent has numChildren. Other branches are loaded upon request.
 
 - Cons:
   - if a different branch is fresher or longer, it still doesn't get shown. Bad UX.
   - data is a bit weird: e.g. main branch messages don't have a parentId but branched ones do
   - if you toggle to a different branch, it will have to load the whole branch down to the leaf. This seems expected, it just might be bad if the branch is massive.
 
-I chose `Approach #3`. If the user wants to keep the UI state by seeing the branch they're currently on, this can just be cached locally for them. Otherwise, loading the original branch seems natural. This is currently implemented in `ChatContainer` and `useChat`. It works great!
+I chose `Approach #2`. If the user wants to keep the UI state by seeing the branch they're currently on, this can just be cached locally for them. Otherwise, loading the original branch seems natural. This is currently implemented in `ChatContainer` and `useChat`. It works great!
 
 # API
 
@@ -69,16 +64,18 @@ Ideally, we cache this and invalidate whenever a user starts a new chat. Caching
 
 This service takes a user's message, loads some history (e.g. 5 most recent messages), and calls the model inference service (see below; we start with OpenAI ChatGPT but goal is to have a custom model served).
 
-The core question is how to stream back tokens and save them to the DB in a manner that provides the best UX. By "best UX", I mean fastest and also doesn't break the model's response on disconnect (like ChatGPT does). 
+The core question is how to stream back tokens and save them to the DB in a manner that provides the best UX. By "best UX", I mean fastest and also doesn't break the model's response on disconnect (like ChatGPT does).
 
-I chose `server-sent events` because they are (a tiny bit) faster than WebSockets, easy way to provide realtime updates, and the connection is basically unidirectional (chatbot just responding to user). WebSockets would make sense if the user was sending more realtime data and the connection was more bidirectional. 
+I chose `server-sent events` because they are (a tiny bit) faster than WebSockets, easy way to provide realtime updates, and the connection is basically unidirectional (chatbot just responding to user). WebSockets would make sense if the user was sending more realtime data and the connection was more bidirectional.
 
 For the response logic, here are the competing solutions:
 
 1. Naive approach A: Save every token that is generated to the DB directly, and user keeps reading from DB using polling.
+
 - Critical flaw: way way way too many writes and reads, obviously not smart.
 
 2. Naive approach B: Stream every token back to the client, and only save to DB when the stream is done.
+
 - Critical flaw: if the client disconnects, or the stream is otherwise interrupted, all tokens will be lost. This happens on real ChatGPT (try refreshing mid-message), and it is infuriating :)
 
 3. Save to DB after full message. If the user disconnects, start putting response tokens in Redis. If they reconnect or request, pull from Redis for most recent.
@@ -86,11 +83,12 @@ For the response logic, here are the competing solutions:
 - Cons:
   - It is unclear how to start re-streaming the new tokens back to the user.
   - If the connection between this service and the model inference service is interrupted, the whole response is moot.
-  - Added bit of complexity 
+  - Added bit of complexity
 
 4. Model inference service saves tokens to Redis directly, using a key for the conversation ID. When the user wants to see response, just read from Redis.
 
 - Cons:
+
   - TINY BIT slower because we have Redis as a new middle layer, on the order of 10ms.
   - A ton of load on Redis, much unnecessary.
 
@@ -107,7 +105,7 @@ I chose `Vercel KV` out of ease, but one downside is that it doesn't support Red
 
 ### GET /conversations/[conversationId]/history: get the history of a chat
 
-Will paginate in future. Once I do, it will use the structure described above: load the leftmost branch first. 
+Will paginate in future. Once I do, it will use the structure described above: load the leftmost branch first.
 
 ### GET /conversations/[conversationId]/current: get the current streaming response for a chat
 
@@ -117,7 +115,7 @@ Uses the same functionality as the POST /conversations/[conversationId] handler.
 
 userId should be extracted from the headers.
 
-Load balancing and autoscaling is being done by Vercel right now, but want to switch to ECS + Elastic Load Balancing. 
+Load balancing and autoscaling is being done by Vercel right now, but want to switch to ECS + Elastic Load Balancing.
 
 ### Implementation details:
 
@@ -139,7 +137,7 @@ The benefits include easier migrations, ability to keep the DB schema synced wit
 
 ### Sharding
 
-The shard key is the userId. This is clearly the right choice: users only need to fetch their own data, they often want to fetch all or most of their data so it shouldn't be split up, and each individual user does not have enough data that it would have to be split up across nodes. This means that popular queries like "get messages" and "get conversations" can interact with exactly 1 shard and will have all the requesite data. 
+The shard key is the userId. This is clearly the right choice: users only need to fetch their own data, they often want to fetch all or most of their data so it shouldn't be split up, and each individual user does not have enough data that it would have to be split up across nodes. This means that popular queries like "get messages" and "get conversations" can interact with exactly 1 shard and will have all the requesite data.
 
 I shard across 2 Postgres instances for example, but can grow to many more.
 
@@ -152,7 +150,7 @@ We have two common queries:
 - get all conversations for a userId
 - get all messages for a conversationId
 
-So, we can easily put an index on `conversations` for `userId`, and `messages` for `conversationId`. This is defined in the Prisma schema.
+So, we can easily put an index on `conversations` for `userId`, and `messages` for `conversationId`. This will soon be defined in the Prisma schema.
 
 ### Implementation
 
@@ -201,9 +199,9 @@ We server-side render everything that is non-interactive to the client (which is
 
 For fetching conversation list, I chose to do this on the server. The benefit is that it can be a lot of data and HTML, and the server can do this quickly and get a fast time-to-meaningful-paint for the user. The downside is that it's a heavier load on the server. Furthermore, it makes for an easy caching experience, especially with NextJS: we always know exactly when a new conversation is created, so we can manually trigger revalidations, and never risk stale data.
 
-For fetching chat history, I chose `SWR`. This allows the user to jump between chat windows without having to wait to see chat data, by storing the response data in the global SWR cache. We can easily mutate the SWR cache when we receive new tokens. 
+For fetching chat history, I chose to extend `SWR`. This allows the user to jump between chat windows without having to wait to see chat data, by storing the response data in the global SWR cache. We can easily mutate the SWR cache when we receive new tokens.
 
-I'm exploring using `IndexedDB` to store the SWR cache, so that different browser windows can have synchronized data. It adds a bit of complexity. 
+I'm exploring using `IndexedDB` to store the SWR cache, so that different browser windows can have synchronized data. It adds a bit of complexity.
 
 # Model inference
 
