@@ -199,7 +199,7 @@ We server-side render everything that is non-interactive to the client (which is
 
 ### Frontend data
 
-For fetching conversation list, I chose to do this on the server. The benefit is that it can be a lot of data and HTML, and the server can do this quickly and get a fast time-to-meaningful-paint for the user. The downside is that it's a heavier load on the server. Furthermore, it makes it easy to handle caching, especially with NextJS, as we can just cache the response on the server and explicitly revalidate it when a new conversation is created.
+For fetching conversation list, I chose to do this on the server. The benefit is that it can be a lot of data and HTML, and the server can do this quickly and get a fast time-to-meaningful-paint for the user. The downside is that it's a heavier load on the server. Furthermore, it makes for an easy caching experience, especially with NextJS: we always know exactly when a new conversation is created, so we can manually trigger revalidations, and never risk stale data.
 
 For fetching chat history, I chose `SWR`. This allows the user to jump between chat windows without having to wait to see chat data, by storing the response data in the global SWR cache. We can easily mutate the SWR cache when we receive new tokens. 
 
@@ -214,6 +214,13 @@ Nvidia's Triton Inference Server is the most production-grade product out there,
 Still learning here on how to make responses as fast as possible.
 
 Implementing:
+
+- [ ] KV cache using HuggingFace's past_key_values and a Flask LRUCache
+- [ ]
+
+# Model inference
+
+Still learning here. Implementing:
 
 - [ ] KV cache using HuggingFace's past_key_values and a Flask LRUCache
 - [ ]

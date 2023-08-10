@@ -12,7 +12,7 @@ interface IUseChatOptions {
 
 /*
  *
- * Enables message editing.
+ * Chat functions for any conversation.
  *
  */
 export function useChat({
@@ -21,8 +21,6 @@ export function useChat({
 }: IUseChatOptions) {
   const [error, setError] = useState<Error | null>(null);
 
-  // load initial messages from cache, also TODO: need to figure out how to stream back / append any current stream.
-  // just do it in separate req and mutate if so
   const { data, mutate } = useSWR<any[]>(
     [
       `http://localhost:3000/api/conversations/${conversationId}`,
@@ -33,44 +31,38 @@ export function useChat({
       fallbackData: initialMessages,
     }
   );
-  const messages = data! || [];
 
-  //   TODO: on reconnect, call a "resume" function that hits the resume endpoint, sets loading if needed, and streams back
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const messages = data! || [];
 
   const { data: isLoading = false, mutate: mutateIsLoading } = useSWR<boolean>(
     [conversationId, "isLoading"],
     null
   );
 
-  // store old messages in case we need to fall back locally
+  // Store old messages in case we need to fall back
   const messagesRef = useRef<any[]>(messages);
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
 
-  // return fetchMore, which can take a parentMessageId to get a different branch
-
-  // return sendMessage function. If there's a parentId, this .
-  // adds the message to state optimistically
-  // sends all the messages to the server
-  // gets the streamed back message and adds it in
+  /*
+   *
+   * This function is the core
+   *
+   */
   const sendMessage = async (
     content: string,
     parentId?: string,
     onSend?: (args: any) => any,
     messageOverride?: any[]
   ) => {
-    // TODO if there is a parentId, only pass in messages before that parentId to newMessages
-    // TODO add parentId in database
-    // TODO save this ID in database as is
-
     const historyToUse = messageOverride || messagesRef.current;
 
     if (!conversationId?.length) {
       if (messages?.at(-1)?.conversationId) {
         conversationId = messages?.at(-1)?.conversationId;
       } else {
-        // TODO: create a new conversation, send message, router refresh
         let { data } = await fetch("http://localhost:3000/api/conversations", {
           method: "POST",
           body: JSON.stringify({
@@ -122,9 +114,9 @@ export function useChat({
     }
   };
 
-  // TODO add in cancel function
-
-  // return isLoading, error, input, setInput
+  // TODO: impl "fetchMore", which can take a parentMessageId to get a different branch
+  // TODO: on reconnect, call a "resume" function that hits the resume endpoint, sets loading if needed, and streams back
+  // TODO: add in "cancel" function
   return {
     messages,
     sendMessage,
@@ -138,7 +130,6 @@ const getGenerationStream = async (
   responseId: string,
   onTokens: (tokens: any[]) => void
 ) => {
-  // TODO important replace this with a proper conversation endpoint so it can save stuff
   const res = await fetch(apiUrl, {
     method: "POST",
     body: JSON.stringify({
@@ -164,7 +155,6 @@ const getGenerationStream = async (
   };
 
   let responseMessage: any = {
-    // TODO: get the message ID from the server, or we make it on the client and pass it in
     id: responseId,
     createdAt,
     content: "",

@@ -1,29 +1,22 @@
-from flask import Flask, request, Response
-from transformers import AutoTokenizer, AutoModelForCausalLM
-import torch
-import json
+from flask import Flask, request, Response, jsonify
+from generate import generate_texts
 
 app = Flask(__name__)
 
+def generate_stream(model_name, input_texts):
+    generated_texts = generate_texts(model_name, input_texts)
+    for text in generated_texts:
+        yield f"data: {text}\n\n"
+
 @app.route('/generate', methods=['POST'])
 def generate():
-    # Get the input data from the request
-    data = request.json
-    # texts = data.get('texts', [])
+    model_name = request.json['model_name']
+    input_texts = request.json['input_texts']
 
-    # Process the batch of texts
-    # outputs = process_batch(texts)
-    # tokens = outputs.logits.argmax(dim=-1).tolist()
-
-    # Convert the tokens to text
-    texts_out = ["hey hey", "number 2", "seven", "86", "fun"]
-
-    # Create a response by streaming the texts
-    def generate_response():
-        for text in texts_out:
-            yield text + "\n"
-
-    return Response(generate_response(), content_type='text/plain')
+    try:
+        return Response(generate_stream(model_name, input_texts), content_type='text/event-stream')
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, threaded=True)
