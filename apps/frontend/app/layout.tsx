@@ -20,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={classNames(inter.className, "flex flex-row")}>
+        {/* @ts-ignore */}
         <Sidebar />
         {children}
       </body>
